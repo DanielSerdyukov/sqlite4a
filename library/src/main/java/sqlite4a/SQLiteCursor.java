@@ -10,8 +10,6 @@ public class SQLiteCursor {
 
     private static final int SQLITE_ROW = 100;
 
-    private static final String EMPTY_STRING = "";
-
     private final long mStmtPtr;
 
     @Keep
@@ -45,12 +43,10 @@ public class SQLiteCursor {
         return nativeGetColumnDouble(mStmtPtr, index);
     }
 
-    @NonNull
     public String getColumnString(int index) {
         return nativeGetColumnString(mStmtPtr, index);
     }
 
-    @NonNull
     public byte[] getColumnBlob(int index) {
         return nativeGetColumnBlob(mStmtPtr, index);
     }

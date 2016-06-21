@@ -22,6 +22,11 @@ static struct {
     jmethodID compare;
 } gComparator;
 
+static struct {
+    jclass clazz;
+    jmethodID invoke;
+} gSQLiteInvokable;
+
 static void throw_sqlite_exception(JNIEnv *env, int code, const char *message) {
     if (gSQLiteException.clazz) {
         env->ThrowNew(gSQLiteException.clazz, message);
@@ -81,6 +86,29 @@ static int java_compare(void *data, int ll, const void *lv, int rl, const void *
     return binary_compare(data, ll, lv, rl, rv);
 }
 
+static void java_invoke(sqlite3_context *context, int argc, sqlite3_value **argv) {
+    JNIEnv *env;
+    if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK) {
+        jlong values[argc];
+        for (int i = 0; i < argc; ++i) {
+            values[i] = reinterpret_cast<jlong>(argv[i]);
+        }
+        void *data = sqlite3_user_data(context);
+        if (data != nullptr) {
+            jobject func = env->NewLocalRef(reinterpret_cast<jobject>(data));
+            jlongArray valuesArr = env->NewLongArray(argc);
+            env->SetLongArrayRegion(valuesArr, 0, argc, values);
+            env->CallVoidMethod(func, gSQLiteInvokable.invoke, reinterpret_cast<jlong>(context), valuesArr);
+            env->DeleteLocalRef(valuesArr);
+            env->DeleteLocalRef(func);
+            if (env->ExceptionCheck()) {
+                LOGE("An exception was thrown by custom function.");
+                env->ExceptionClear();
+            }
+        }
+    }
+}
+
 static void java_finalize(void *data) {
     JNIEnv *env;
     if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK && data) {
@@ -98,8 +126,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
     gSQLiteException.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteException")));
     gComparator.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("java/util/Comparator")));
     gComparator.compare = env->GetMethodID(gComparator.clazz, "compare", "(Ljava/lang/Object;Ljava/lang/Object;)I");
-    /*gSQLiteInvokable.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteInvokable")));
-    gSQLiteInvokable.invoke = env->GetMethodID(gSQLiteInvokable.clazz, "invoke", "(J[J)V");*/
+    gSQLiteInvokable.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteInvokable")));
+    gSQLiteInvokable.invoke = env->GetMethodID(gSQLiteInvokable.clazz, "invoke", "(J[J)V");
     sqlite3_soft_heap_limit64(SOFT_HEAP_LIMIT);
     sqlite3_initialize();
     return JNI_VERSION_1_6;
@@ -223,6 +251,20 @@ Java_sqlite4a_SQLiteDb_nativeCreateCollationV2(JNIEnv *env, jclass caller, jlong
     const char *name = env->GetStringUTFChars(nameStr, nullptr);
     int ret = sqlite3_create_collation_v2(db, name, SQLITE_UTF8, reinterpret_cast<void *>(comparatorRef),
             &java_compare, &java_finalize);
+    env->ReleaseStringUTFChars(nameStr, name);
+    if (SQLITE_OK != ret) {
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteDb_nativeCreateFunctionV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
+        jint numArgs, jobject func) {
+    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    jobject funcRef = env->NewGlobalRef(func);
+    const char *name = env->GetStringUTFChars(nameStr, nullptr);
+    int ret = sqlite3_create_function_v2(db, name, numArgs, SQLITE_UTF8, reinterpret_cast<void *>(funcRef),
+            &java_invoke, nullptr, nullptr, &java_finalize);
     env->ReleaseStringUTFChars(nameStr, name);
     if (SQLITE_OK != ret) {
         throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
@@ -380,5 +422,69 @@ Java_sqlite4a_SQLiteCursor_nativeGetColumnCount(JNIEnv *env, jclass caller, jlon
 extern "C" JNIEXPORT jstring JNICALL
 Java_sqlite4a_SQLiteCursor_nativeGetColumnName(JNIEnv *env, jclass caller, jlong stmtPtr, jint index) {
     return env->NewStringUTF(sqlite3_column_name(reinterpret_cast<sqlite3_stmt *>(stmtPtr), index));
+}
+//endregion
+
+//region SQLiteValue
+extern "C" JNIEXPORT jlong JNICALL
+Java_sqlite4a_SQLiteValue_nativeLongValue(JNIEnv *env, jclass type, jlong valuePtr) {
+    sqlite3_value *value = reinterpret_cast<sqlite3_value *>(valuePtr);
+    return sqlite3_value_int64(value);
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_sqlite4a_SQLiteValue_nativeStringValue(JNIEnv *env, jclass type, jlong valuePtr) {
+    sqlite3_value *value = reinterpret_cast<sqlite3_value *>(valuePtr);
+    const unsigned char *text = sqlite3_value_text(value);
+    return env->NewStringUTF(reinterpret_cast<const char *>(text));
+}
+
+extern "C" JNIEXPORT jdouble JNICALL
+Java_sqlite4a_SQLiteValue_nativeDoubleValue(JNIEnv *env, jclass type, jlong valuePtr) {
+    sqlite3_value *value = reinterpret_cast<sqlite3_value *>(valuePtr);
+    return sqlite3_value_double(value);
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_sqlite4a_SQLiteValue_nativeBlobValue(JNIEnv *env, jclass type, jlong valuePtr) {
+    sqlite3_value *value = reinterpret_cast<sqlite3_value *>(valuePtr);
+    const void *blob = sqlite3_value_blob(value);
+    int size = sqlite3_value_bytes(value);
+    jbyteArray blobArr = env->NewByteArray(size);
+    env->SetByteArrayRegion(blobArr, 0, size, reinterpret_cast<const jbyte *>(blob));
+    return blobArr;
+}
+//endregion
+
+//region SQLiteContext
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteContext_nativeResultNull(JNIEnv *env, jclass type, jlong contextPtr) {
+    sqlite3_result_null(reinterpret_cast<sqlite3_context *>(contextPtr));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteContext_nativeResultLong(JNIEnv *env, jclass type, jlong contextPtr, jlong result) {
+    sqlite3_result_int64(reinterpret_cast<sqlite3_context *>(contextPtr), result);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteContext_nativeResultText(JNIEnv *env, jclass type, jlong contextPtr, jstring resultStr) {
+    sqlite3_context *context = reinterpret_cast<sqlite3_context *>(contextPtr);
+    const char *result = env->GetStringUTFChars(resultStr, nullptr);
+    sqlite3_result_text(context, result, static_cast<int>(strlen(result)), SQLITE_TRANSIENT);
+    env->ReleaseStringUTFChars(resultStr, result);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteContext_nativeResultDouble(JNIEnv *env, jclass type, jlong contextPtr, jdouble result) {
+    sqlite3_result_double(reinterpret_cast<sqlite3_context *>(contextPtr), result);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteContext_nativeResultBlob(JNIEnv *env, jclass type, jlong contextPtr, jbyteArray resultArr) {
+    sqlite3_context *context = reinterpret_cast<sqlite3_context *>(contextPtr);
+    jbyte *result = env->GetByteArrayElements(resultArr, nullptr);
+    sqlite3_result_blob(context, result, env->GetArrayLength(resultArr), SQLITE_TRANSIENT);
+    env->ReleaseByteArrayElements(resultArr, result, 0);
 }
 //endregion

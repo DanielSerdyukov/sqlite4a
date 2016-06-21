@@ -34,6 +34,8 @@ public class SQLiteDb implements Closeable {
 
     private static native void nativeCreateCollationV2(long dbPtr, String name, Comparator<String> comparator);
 
+    private static native void nativeCreateFunctionV2(long dbPtr, String name, int numArgs, SQLiteInvokable func);
+
     public boolean isReadOnly() {
         return nativeIsReadOnly(mDbPtr);
     }
@@ -77,6 +79,10 @@ public class SQLiteDb implements Closeable {
 
     public void createCollation(@NonNull String name, @NonNull Comparator<String> comparator) {
         nativeCreateCollationV2(mDbPtr, name, comparator);
+    }
+
+    public void createFunction(@NonNull String name, int numArgs, @NonNull SQLiteFunc func) {
+        nativeCreateFunctionV2(mDbPtr, name, numArgs, new SQLiteInvokable(func));
     }
 
     @Override
