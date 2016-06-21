@@ -1,0 +1,7 @@
+*.hprof
+local.properties
+.gradletasknamecache
+**/.gradle/
+**/build/
+**/.idea/
+**/.toolchain
