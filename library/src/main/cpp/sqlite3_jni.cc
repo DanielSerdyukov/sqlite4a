@@ -17,6 +17,10 @@ static struct {
     jclass clazz;
 } gSQLiteException;
 
+static struct {
+    jclass clazz;
+    jmethodID compare;
+} gComparator;
 
 static void throw_sqlite_exception(JNIEnv *env, int code, const char *message) {
     if (gSQLiteException.clazz) {
@@ -46,6 +50,44 @@ static void throw_sqlite_exception(int code, const char *message) {
     }
 }
 
+static int binary_compare(void *data, int ll, const void *lv, int rl, const void *rv) {
+    int rc, n;
+    n = ll < rl ? ll : rl;
+    rc = memcmp(lv, rv, static_cast<size_t>(n));
+    if (rc == 0) {
+        rc = ll - rl;
+    }
+    return rc;
+}
+
+static int java_compare(void *data, int ll, const void *lv, int rl, const void *rv) {
+    JNIEnv *env;
+    if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK && data) {
+        std::string lhs(static_cast<const char *>(lv), static_cast<size_t>(ll));
+        std::string rhs(static_cast<const char *>(rv), static_cast<size_t>(rl));
+        jobject comparator = env->NewLocalRef(reinterpret_cast<jobject>(data));
+        jstring lhsStr = env->NewStringUTF(lhs.c_str());
+        jstring rhsStr = env->NewStringUTF(rhs.c_str());
+        int ret = env->CallIntMethod(comparator, gComparator.compare, lhsStr, rhsStr);
+        env->DeleteLocalRef(lhsStr);
+        env->DeleteLocalRef(rhsStr);
+        env->DeleteLocalRef(comparator);
+        if (env->ExceptionCheck()) {
+            LOGE("An exception was thrown by custom collation.");
+            env->ExceptionClear();
+        }
+        return ret;
+    }
+    return binary_compare(data, ll, lv, rl, rv);
+}
+
+static void java_finalize(void *data) {
+    JNIEnv *env;
+    if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK && data) {
+        env->DeleteGlobalRef(reinterpret_cast<jobject>(data));
+    }
+}
+
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
     gJavaVm = vm;
@@ -54,9 +96,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
     gSQLiteException.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteException")));
-/*    gComparator.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("java/util/Comparator")));
+    gComparator.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("java/util/Comparator")));
     gComparator.compare = env->GetMethodID(gComparator.clazz, "compare", "(Ljava/lang/Object;Ljava/lang/Object;)I");
-    gSQLiteInvokable.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteInvokable")));
+    /*gSQLiteInvokable.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteInvokable")));
     gSQLiteInvokable.invoke = env->GetMethodID(gSQLiteInvokable.clazz, "invoke", "(J[J)V");*/
     sqlite3_soft_heap_limit64(SOFT_HEAP_LIMIT);
     sqlite3_initialize();
@@ -174,6 +216,20 @@ Java_sqlite4a_SQLiteDb_nativePrepareV2(JNIEnv *env, jclass type, jlong dbPtr, js
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_sqlite4a_SQLiteDb_nativeCreateCollationV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
+        jobject comparator) {
+    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    jobject comparatorRef = env->NewGlobalRef(comparator);
+    const char *name = env->GetStringUTFChars(nameStr, nullptr);
+    int ret = sqlite3_create_collation_v2(db, name, SQLITE_UTF8, reinterpret_cast<void *>(comparatorRef),
+            &java_compare, &java_finalize);
+    env->ReleaseStringUTFChars(nameStr, name);
+    if (SQLITE_OK != ret) {
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCloseV2(JNIEnv *env, jclass type, jlong dbPtr) {
     sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
     sqlite3_close_v2(db);
@@ -283,6 +339,7 @@ Java_sqlite4a_SQLiteStmt_nativeFinalize(JNIEnv *env, jclass caller, jlong stmtPt
 }
 //endregion
 
+//region SQLiteCursor
 extern "C" JNIEXPORT jint JNICALL
 Java_sqlite4a_SQLiteCursor_nativeStep(JNIEnv *env, jclass caller, jlong stmtPtr) {
     return sqlite3_step(reinterpret_cast<sqlite3_stmt *>(stmtPtr));
@@ -324,3 +381,4 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_sqlite4a_SQLiteCursor_nativeGetColumnName(JNIEnv *env, jclass caller, jlong stmtPtr, jint index) {
     return env->NewStringUTF(sqlite3_column_name(reinterpret_cast<sqlite3_stmt *>(stmtPtr), index));
 }
+//endregion

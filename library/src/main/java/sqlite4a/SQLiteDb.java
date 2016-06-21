@@ -4,6 +4,7 @@ import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 
 import java.io.Closeable;
+import java.util.Comparator;
 
 /**
  * @author Daniel Serdyukov
@@ -30,6 +31,8 @@ public class SQLiteDb implements Closeable {
     private static native int nativeGetAutocommit(long dbPtr);
 
     private static native long nativePrepareV2(long dbPtr, String sql);
+
+    private static native void nativeCreateCollationV2(long dbPtr, String name, Comparator<String> comparator);
 
     public boolean isReadOnly() {
         return nativeIsReadOnly(mDbPtr);
@@ -70,6 +73,10 @@ public class SQLiteDb implements Closeable {
     @NonNull
     public SQLiteStmt prepare(@NonNull String sql) {
         return new SQLiteStmt(nativePrepareV2(mDbPtr, sql));
+    }
+
+    public void createCollation(@NonNull String name, @NonNull Comparator<String> comparator) {
+        nativeCreateCollationV2(mDbPtr, name, comparator);
     }
 
     @Override
