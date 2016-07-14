@@ -1,7 +1,0 @@
--- Configuring done
--- Generating done
--- Build files have been written to: /Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/debug/armeabi-v7a
-CMake Warning at CMakeLists.txt:32 (message):
-  /usr/local/opt/android-ndk/platforms/android-16/arch-arm/usr/lib/liblog.so
-
-
