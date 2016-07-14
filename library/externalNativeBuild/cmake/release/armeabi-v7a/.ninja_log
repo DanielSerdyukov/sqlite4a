@@ -1,0 +1,11 @@
+# ninja log v5
+0	653	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3_jni.cc.o	4c844019a93adabc
+0	41459	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3.c.o	4473804cd641b463
+41460	41650	0	../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libsqlite3_jni.so	ef906257e5068f18
+0	660	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3_jni.cc.o	f8777686ba99c9d1
+0	41857	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3.c.o	e7bae4b743bd85d7
+41857	42069	0	../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libsqlite3_jni.so	d80463416ab3bc4b
+0	81	0	build.ninja	50eb0afe05e80719
+0	511	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3_jni.cc.o	92a53c390fa1aa79
+0	40870	0	CMakeFiles/sqlite3_jni.dir/src/main/cpp/sqlite3.c.o	9e26de5cf22cf7bc
+40870	41068	0	../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libsqlite3_jni.so	c3c4ed3de5d2b553

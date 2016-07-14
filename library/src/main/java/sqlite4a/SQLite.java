@@ -3,6 +3,8 @@ package sqlite4a;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 /**
  * @author Daniel Serdyukov
  */
@@ -22,9 +24,17 @@ public class SQLite {
 
     private static final int BUSY_TIMEOUT_MS = 2500;
 
-    public static void loadLibrary(@NonNull Context context) {
-        //ReLinker.loadLibrary(context, "sqlite3_jni");
+    /**
+     * @see {@link #loadLibrary(Context)}
+     * @deprecated
+     */
+    @Deprecated
+    public static void loadLibrary() {
         Runtime.getRuntime().loadLibrary("sqlite3_jni");
+    }
+
+    public static void loadLibrary(@NonNull Context context) {
+        ReLinker.loadLibrary(context, "sqlite3_jni");
     }
 
     @NonNull

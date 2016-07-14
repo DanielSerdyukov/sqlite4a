@@ -1,0 +1,1 @@
+/Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/sqlite3_jni.dir

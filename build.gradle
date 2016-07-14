@@ -3,7 +3,8 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0-alpha3'
+        classpath 'com.android.tools.build:gradle:2.2.0-alpha5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
     }
 }
 
@@ -11,6 +12,33 @@ allprojects {
     repositories {
         jcenter()
     }
+}
+
+ext {
+    versionName = "3.13.0-${revision}"
+    versionCode = calculateVersionCode()
+}
+
+def getRevision() {
+    def tag = 'git describe --tags'.execute().text.trim()
+    if (tag =~ /^v.*$/) {
+        return tag.substring(1)
+    }
+    return 'SNAPSHOT'
+}
+
+int calculateVersionCode() {
+    def versionCode = 0
+    (versionName =~ /(\d+)/).collect {
+        Integer.parseInt(it[0] as String)
+    }.eachWithIndex { num, index ->
+        if (index < 3) {
+            versionCode += (num * (100000 / Math.pow(100, index)))
+        } else {
+            versionCode += num
+        }
+    }
+    return Math.max(1, versionCode)
 }
 
 task wrapper(type: Wrapper) {

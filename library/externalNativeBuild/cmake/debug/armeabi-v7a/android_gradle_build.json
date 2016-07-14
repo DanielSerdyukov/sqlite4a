@@ -1,0 +1,45 @@
+
+{
+	"buildFiles" : [ "/Users/ds/Projects/sqlite4a/library/CMakeLists.txt" ],
+	"cFileExtensions" : [ "c" ],
+	"cleanCommands" : 
+	[
+		"/usr/local/Cellar/android-sdk/24.4.1_1/cmake/bin/cmake --build /Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/debug/armeabi-v7a --target clean"
+	],
+	"cppFileExtensions" : [ "cc" ],
+	"libraries" : 
+	{
+		"sqlite3_jni-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "sqlite3_jni",
+			"buildCommand" : "/usr/local/Cellar/android-sdk/24.4.1_1/cmake/bin/cmake --build /Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/debug/armeabi-v7a --target sqlite3_jni",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : " -DANDROID -DHAVE_USLEEP=1 -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FILE_PERMISSIONS=0600 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576 -DSQLITE_ENABLE_FTS5 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_MEMORY_MANAGEMENT=1 -DSQLITE_HAVE_ISNAN -DSQLITE_OMIT_BUILTIN_TEST -DSQLITE_OMIT_COMPILEOPTION_DIAGS -DSQLITE_POWERSAFE_OVERWRITE=1 -DSQLITE_TEMP_STORE=3 -DSQLITE_THREADSAFE=2 -D__ANDROID__ -Dsqlite3_jni_EXPORTS -isystem /usr/local/opt/android-ndk/platforms/android-16/arch-arm/usr/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -fexceptions -Wno-psabi --sysroot=/usr/local/opt/android-ndk/platforms/android-16/arch-arm -funwind-tables -finline-limit=64 -fsigned-char -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fdata-sections -ffunction-sections -Wa,--noexecstack  -marm -fno-omit-frame-pointer -fno-strict-aliasing -O0 -g -DDEBUG -D_DEBUG -fPIC        ",
+					"src" : "/Users/ds/Projects/sqlite4a/library/src/main/cpp/sqlite3.c",
+					"workingDirectory" : "/Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  -DANDROID -DHAVE_USLEEP=1 -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FILE_PERMISSIONS=0600 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576 -DSQLITE_ENABLE_FTS5 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_MEMORY_MANAGEMENT=1 -DSQLITE_HAVE_ISNAN -DSQLITE_OMIT_BUILTIN_TEST -DSQLITE_OMIT_COMPILEOPTION_DIAGS -DSQLITE_POWERSAFE_OVERWRITE=1 -DSQLITE_TEMP_STORE=3 -DSQLITE_THREADSAFE=2 -D__ANDROID__ -Dsqlite3_jni_EXPORTS -isystem /usr/local/opt/android-ndk/platforms/android-16/arch-arm/usr/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /usr/local/opt/android-ndk/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -fexceptions -frtti -Wno-psabi --sysroot=/usr/local/opt/android-ndk/platforms/android-16/arch-arm -funwind-tables -finline-limit=64 -fsigned-char -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fdata-sections -ffunction-sections -Wa,--noexecstack -std=c++11 -fno-rtti -fno-exceptions -fvisibility=hidden -marm -fno-omit-frame-pointer -fno-strict-aliasing -O0 -g -DDEBUG -D_DEBUG -fPIC      ",
+					"src" : "/Users/ds/Projects/sqlite4a/library/src/main/cpp/sqlite3_jni.cc",
+					"workingDirectory" : "/Users/ds/Projects/sqlite4a/library/externalNativeBuild/cmake/debug/armeabi-v7a"
+				}
+			],
+			"output" : "/Users/ds/Projects/sqlite4a/library/build/intermediates/cmake/debug/obj/armeabi-v7a/libsqlite3_jni.so",
+			"toolchain" : "13852814002211454459"
+		}
+	},
+	"toolchains" : 
+	{
+		"13852814002211454459" : 
+		{
+			"cCompilerExecutable" : "/usr/local/opt/android-ndk/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64/bin/arm-linux-androideabi-gcc",
+			"cppCompilerExecutable" : "/usr/local/opt/android-ndk/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64/bin/arm-linux-androideabi-g++"
+		}
+	}
+}

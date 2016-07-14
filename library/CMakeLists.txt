@@ -21,8 +21,12 @@ add_definitions(
         -DSQLITE_OMIT_BUILTIN_TEST
         -DSQLITE_OMIT_COMPILEOPTION_DIAGS
         -DSQLITE_DEFAULT_FILE_PERMISSIONS=0600
+        -DSQLITE_DEFAULT_FOREIGN_KEYS=1
 )
 
 add_library(sqlite3_jni SHARED ${HEADERS} ${SOURCES})
 
-target_link_libraries(sqlite3_jni m log)
+find_library(M m)
+find_library(LOG log)
+
+target_link_libraries(sqlite3_jni ${M} ${LOG})

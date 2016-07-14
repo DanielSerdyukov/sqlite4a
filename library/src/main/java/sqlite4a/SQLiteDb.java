@@ -14,7 +14,7 @@ public class SQLiteDb implements Closeable {
     private final long mDbPtr;
 
     @Keep
-    SQLiteDb(long dbPtr) {
+    protected SQLiteDb(long dbPtr) {
         mDbPtr = dbPtr;
     }
 

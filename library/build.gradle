@@ -1,27 +1,26 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "24.0.0"
+    compileSdkVersion Integer.parseInt(pCompileSdkVersion)
+    buildToolsVersion pBuildToolsVersion
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion Integer.parseInt(pMinSdkVersion)
+        targetSdkVersion Integer.parseInt(pTargetSdkVersion)
+
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName
+
+        consumerProguardFiles 'proguard.pro'
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-        cmake {
-            cppFlags "-std=c++11 -fno-rtti -fno-exceptions -fvisibility=hidden"
-            abiFilters "armeabi-v7a", "arm64-v8a", "x86"
-        }
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.pro'
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_TOOLCHAIN=clang"
+                cppFlags "-std=c++11", "-fno-rtti", "-fno-exceptions", "-fvisibility=hidden"
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+            }
         }
     }
 
@@ -30,10 +29,22 @@ android {
             path "CMakeLists.txt"
         }
     }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.pro'
+        }
+    }
 }
 
 dependencies {
     compile 'com.android.support:support-annotations:24.0.0'
+    compile 'com.getkeepsafe.relinker:relinker:1.2.1'
     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.2'
     androidTestCompile 'com.android.support.test:runner:0.5'
+}
+
+if (project.hasProperty('bintrayUser')) {
+    apply from: 'bintray.gradle'
 }
