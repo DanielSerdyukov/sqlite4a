@@ -7,9 +7,8 @@ android {
     defaultConfig {
         minSdkVersion Integer.parseInt(pMinSdkVersion)
         targetSdkVersion Integer.parseInt(pTargetSdkVersion)
-
-        versionCode rootProject.ext.versionCode
-        versionName rootProject.ext.versionName
+        versionCode 1
+        versionName pVersionName
 
         consumerProguardFiles 'proguard.pro'
 
@@ -36,15 +35,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.pro'
         }
     }
+
+    libraryVariants.all { variant ->
+        int versionCode = 0
+        (pVersionName =~ /(\d+)/).collect {
+            Integer.parseInt(it[0] as String)
+        }.take(4).eachWithIndex { num, index ->
+            versionCode += (num * Math.max(1, (1000000 / Math.pow(100, index))))
+        }
+        variant.mergedFlavor.versionCode = versionCode
+    }
 }
 
 dependencies {
-    compile 'com.android.support:support-annotations:24.0.0'
+    compile 'com.android.support:support-annotations:24.2.0'
     compile 'com.getkeepsafe.relinker:relinker:1.2.1'
     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.2'
     androidTestCompile 'com.android.support.test:runner:0.5'
 }
 
-if (project.hasProperty('bintrayUser')) {
-    apply from: 'bintray.gradle'
-}
+apply from: 'bintray.gradle'

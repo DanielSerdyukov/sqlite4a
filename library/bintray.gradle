@@ -1,8 +1,8 @@
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven-publish'
 
-group = 'sqlite4a'
-version = rootProject.ext.versionName
+group = pJcenterGroup
+version = pVersionName
 
 task sourcesJar(type: Jar) {
     from files('src/main/java')
@@ -21,18 +21,17 @@ publishing {
             artifact sourcesJar
             pom.withXml {
                 Node root = asNode()
-                root.appendNode('name', 'sqlite4a')
+                root.appendNode('name', pJcenterArtifact)
                 root.appendNode('description', 'SQLite bindings for Android')
-                root.appendNode('url', 'https://github.com/DanielSerdyukov/sqlite4a')
+                root.appendNode('url', pGitHubUrl)
 
                 def issues = root.appendNode('issueManagement')
                 issues.appendNode('system', 'github')
-                issues.appendNode('url', 'https://github.com/DanielSerdyukov/sqlite4a/issues')
+                issues.appendNode('url', "${pGitHubUrl}/issues")
 
                 def scm = root.appendNode('scm')
-                scm.appendNode('url', 'scm:https://github.com/DanielSerdyukov/sqlite4a.git')
-                scm.appendNode('connection', 'scm:https://github.com/DanielSerdyukov/sqlite4a.git')
-                scm.appendNode('developerConnection', 'scm:https://github.com/DanielSerdyukov/sqlite4a.git')
+                scm.appendNode('url', "scm:${pGitHubUrl}.git")
+                scm.appendNode('connection', "scm:${pGitHubUrl}.git")
 
                 def license = root.appendNode('licenses').appendNode('license')
                 license.appendNode('name', 'The Apache Software License, Version 2.0')
@@ -55,18 +54,18 @@ publishing {
 }
 
 bintray {
-    user = System.properties['bintrayUser'] ?: System.getenv('BINTRAY_USER')
-    key = System.properties['bintrayKey'] ?: System.getenv('BINTRAY_KEY')
+    user = System.properties['bintrayUser']
+    key = System.properties['bintrayKey']
     configurations = ['archives']
     publications = ['mavenAndroid']
     publish = true
     pkg {
         repo = 'maven'
-        name = project.group
+        name = pJcenterGroup
         licenses = ['Apache-2.0']
         version {
-            name = rootProject.ext.versionName
-            vcsTag = rootProject.ext.versionName
+            name = pVersionName
+            vcsTag = pVersionName
         }
     }
 }
