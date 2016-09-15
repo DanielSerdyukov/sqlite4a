@@ -2,6 +2,7 @@ stages:
   - clean
   - build
   - test
+  - publish
   - deploy
 
 cleanup:
@@ -20,7 +21,7 @@ assembleRelease:
     - ./gradlew assembleRelease
 
 publishToMavenLocal:
-  stage: deploy
+  stage: publish
   script:
     - ./gradlew publishToMavenLocal
   dependencies:
