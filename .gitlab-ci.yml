@@ -2,7 +2,6 @@ stages:
   - clean
   - build
   - test
-  - publish
   - deploy
 
 cleanup:
@@ -18,19 +17,12 @@ assembleDebug:
 assembleRelease:
   stage: build
   script:
-    - ./gradlew assembleRelease
-
-publishToMavenLocal:
-  stage: publish
-  script:
-    - ./gradlew publishToMavenLocal
-  dependencies:
-    - assembleRelease
+    - ./gradlew assembleRelease publishToMavenLocal
 
 bintrayUpload:
   stage: deploy
   script:
     - ./gradlew bintrayUpload
   dependencies:
-    - publishToMavenLocal
+    - assembleRelease
   when: manual
