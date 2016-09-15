@@ -54,8 +54,8 @@ publishing {
 }
 
 bintray {
-    user = System.properties['bintrayUser']
-    key = System.properties['bintrayKey']
+    user = project.properties['bintrayUser']
+    key = project.properties['bintrayKey']
     configurations = ['archives']
     publications = ['mavenAndroid']
     publish = true

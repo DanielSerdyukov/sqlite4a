@@ -1,11 +1,35 @@
-debug:
-  script:
-    - ./gradlew clean assemble
-  except:
-    - /^v.*$/
+stages:
+  - clean
+  - build
+  - test
+  - deploy
 
-bintray:
+cleanup:
+  stage: clean
   script:
-    - ./gradlew clean assembleRelease publishToMavenLocal bintrayUpload
-  only:
-    - /^v.*$/
+    - ./gradlew clean
+
+assembleDebug:
+  stage: build
+  script:
+    - ./gradlew assembleDebug
+
+assembleRelease:
+  stage: build
+  script:
+    - ./gradlew assembleRelease
+
+publishToMavenLocal:
+  stage: deploy
+  script:
+    - ./gradlew publishToMavenLocal
+  dependencies:
+    - assembleRelease
+
+bintrayUpload:
+  stage: deploy
+  script:
+    - ./gradlew bintrayUpload
+  dependencies:
+    - publishToMavenLocal
+  when: manual
