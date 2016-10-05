@@ -27,6 +27,16 @@ static struct {
     jmethodID invoke;
 } gSQLiteInvokable;
 
+static struct {
+    jclass clazz;
+    jmethodID log;
+} gSQLiteLog;
+
+struct SQLiteDb {
+    sqlite3 *db = nullptr;
+    jobject logger = nullptr;
+};
+
 static void throw_sqlite_exception(JNIEnv *env, int code, const char *message) {
     if (gSQLiteException.clazz) {
         env->ThrowNew(gSQLiteException.clazz, message);
@@ -43,15 +53,6 @@ static void throw_sqlite_exception(JNIEnv *env, int code, const char *sql, const
         env->ThrowNew(gSQLiteException.clazz, message.c_str());
     } else {
         LOGE("%s [%d]", message.c_str(), code);
-    }
-}
-
-static void throw_sqlite_exception(int code, const char *message) {
-    JNIEnv *env;
-    if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK) {
-        throw_sqlite_exception(env, code, message);
-    } else {
-        LOGE("[%d] %s", code, message);
     }
 }
 
@@ -116,6 +117,31 @@ static void java_finalize(void *data) {
     }
 }
 
+static int java_log(unsigned mask, void *context, void *p, void *x) {
+    JNIEnv *env;
+    if (gJavaVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_OK && context) {
+        jobject logger = env->NewLocalRef(reinterpret_cast<jobject>(context));
+        if (mask & SQLITE_TRACE_STMT != 0) {
+            std::string trigger = "--";
+            std::string sql(reinterpret_cast<const char *>(x));
+            if (sql.compare(0, trigger.length(), trigger) != 0) {
+                sqlite3_stmt *stmt = static_cast<sqlite3_stmt *>(p);
+                char *expandedSql = sqlite3_expanded_sql(stmt);
+                jstring sqlStr = env->NewStringUTF(expandedSql);
+                sqlite3_free(expandedSql);
+                env->CallVoidMethod(logger, gSQLiteLog.log, sqlStr);
+                env->DeleteLocalRef(sqlStr);
+            }
+        }
+        env->DeleteLocalRef(logger);
+        if (env->ExceptionCheck()) {
+            LOGE("An exception was thrown by sqlite_trace_v2 callback.");
+            env->ExceptionClear();
+        }
+    }
+    return 0;
+}
+
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
     gJavaVm = vm;
@@ -128,6 +154,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
     gComparator.compare = env->GetMethodID(gComparator.clazz, "compare", "(Ljava/lang/Object;Ljava/lang/Object;)I");
     gSQLiteInvokable.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteInvokable")));
     gSQLiteInvokable.invoke = env->GetMethodID(gSQLiteInvokable.clazz, "invoke", "(J[J)V");
+    gSQLiteLog.clazz = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("sqlite4a/SQLiteLog")));
+    gSQLiteLog.log = env->GetMethodID(gSQLiteLog.clazz, "log", "(Ljava/lang/String;)V");
     sqlite3_soft_heap_limit64(SOFT_HEAP_LIMIT);
     sqlite3_initialize();
     return JNI_VERSION_1_6;
@@ -137,6 +165,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 extern "C" JNIEXPORT jstring JNICALL
 Java_sqlite4a_SQLite_getVersion(JNIEnv *env, jclass type) {
     return env->NewStringUTF(sqlite3_libversion());
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_sqlite4a_SQLite_getVersionNumber(JNIEnv *env, jclass type) {
+    return sqlite3_libversion_number();
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -165,52 +198,65 @@ Java_sqlite4a_SQLite_nativeOpenV2(JNIEnv *env, jclass type, jstring pathStr, jin
         return 0;
     }
 
-    return reinterpret_cast<jlong>(db);
+    SQLiteDb *handle = new SQLiteDb;
+    handle->db = db;
+
+    return reinterpret_cast<jlong>(handle);
 }
 //endregion
 
 //region SQLiteDb
 extern "C" JNIEXPORT jboolean JNICALL
 Java_sqlite4a_SQLiteDb_nativeIsReadOnly(JNIEnv *env, jclass type, jlong dbPtr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
-    if (sqlite3_db_readonly(db, nullptr)) {
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
+    if (sqlite3_db_readonly(handle->db, nullptr)) {
         return JNI_TRUE;
     }
     return JNI_FALSE;
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_sqlite4a_SQLiteDb_nativeTrace(JNIEnv *env, jclass type, jlong dbPtr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
-    sqlite3_trace(db, [](void *unused, const char *sql) { LOGI("%s", sql); }, nullptr);
+Java_sqlite4a_SQLiteDb_nativeTraceV2(JNIEnv *env, jclass type, jlong dbPtr, jobject logger, jint mask) {
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
+    jobject newLogger = env->NewGlobalRef(logger);
+    int ret = sqlite3_trace_v2(handle->db, static_cast<unsigned int>(mask), &java_log, newLogger);
+    if (handle->logger) {
+        env->DeleteGlobalRef(handle->logger);
+    }
+    handle->logger = newLogger;
+    if (SQLITE_OK != ret) {
+        env->DeleteGlobalRef(handle->logger);
+        handle->logger = nullptr;
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeExec(JNIEnv *env, jclass type, jlong dbPtr, jstring sqlStr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
 
     const char *sqlChars = env->GetStringUTFChars(sqlStr, nullptr);
     std::string sql(sqlChars);
     env->ReleaseStringUTFChars(sqlStr, sqlChars);
 
-    int ret = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, nullptr);
+    int ret = sqlite3_exec(handle->db, sql.c_str(), nullptr, nullptr, nullptr);
     if (SQLITE_OK != ret) {
-        throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
     }
 }
 
 extern "C" JNIEXPORT jdouble JNICALL
 Java_sqlite4a_SQLiteDb_nativeExecForDouble(JNIEnv *env, jclass type, jlong dbPtr, jstring sqlStr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
 
     const char *sqlChars = env->GetStringUTFChars(sqlStr, nullptr);
     std::string sql(sqlChars);
     env->ReleaseStringUTFChars(sqlStr, sqlChars);
 
     sqlite3_stmt *stmt;
-    int ret = sqlite3_prepare_v2(db, sql.c_str(), static_cast<int>(sql.length()), &stmt, nullptr);
+    int ret = sqlite3_prepare_v2(handle->db, sql.c_str(), static_cast<int>(sql.length()), &stmt, nullptr);
     if (SQLITE_OK != ret) {
-        throw_sqlite_exception(env, ret, sql.c_str(), sqlite3_errmsg(db));
+        throw_sqlite_exception(env, ret, sql.c_str(), sqlite3_errmsg(handle->db));
     }
 
     double value = 0;
@@ -223,21 +269,22 @@ Java_sqlite4a_SQLiteDb_nativeExecForDouble(JNIEnv *env, jclass type, jlong dbPtr
 
 extern "C" JNIEXPORT jint JNICALL
 Java_sqlite4a_SQLiteDb_nativeGetAutocommit(JNIEnv *env, jclass type, jlong dbPtr) {
-    return sqlite3_get_autocommit(reinterpret_cast<sqlite3 *>(dbPtr));
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
+    return sqlite3_get_autocommit(handle->db);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_sqlite4a_SQLiteDb_nativePrepareV2(JNIEnv *env, jclass type, jlong dbPtr, jstring sqlStr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
 
     const char *sqlChars = env->GetStringUTFChars(sqlStr, nullptr);
     std::string sql(sqlChars);
     env->ReleaseStringUTFChars(sqlStr, sqlChars);
 
     sqlite3_stmt *stmt;
-    int ret = sqlite3_prepare_v2(db, sql.c_str(), static_cast<int>(sql.length()), &stmt, nullptr);
+    int ret = sqlite3_prepare_v2(handle->db, sql.c_str(), static_cast<int>(sql.length()), &stmt, nullptr);
     if (SQLITE_OK != ret) {
-        throw_sqlite_exception(env, ret, sql.c_str(), sqlite3_errmsg(db));
+        throw_sqlite_exception(env, ret, sql.c_str(), sqlite3_errmsg(handle->db));
     }
 
     return reinterpret_cast<jlong>(stmt);
@@ -246,35 +293,40 @@ Java_sqlite4a_SQLiteDb_nativePrepareV2(JNIEnv *env, jclass type, jlong dbPtr, js
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCreateCollationV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
         jobject comparator) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
     jobject comparatorRef = env->NewGlobalRef(comparator);
     const char *name = env->GetStringUTFChars(nameStr, nullptr);
-    int ret = sqlite3_create_collation_v2(db, name, SQLITE_UTF8, reinterpret_cast<void *>(comparatorRef),
+    int ret = sqlite3_create_collation_v2(handle->db, name, SQLITE_UTF8, reinterpret_cast<void *>(comparatorRef),
             &java_compare, &java_finalize);
     env->ReleaseStringUTFChars(nameStr, name);
     if (SQLITE_OK != ret) {
-        throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
     }
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCreateFunctionV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
         jint numArgs, jobject func) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
     jobject funcRef = env->NewGlobalRef(func);
     const char *name = env->GetStringUTFChars(nameStr, nullptr);
-    int ret = sqlite3_create_function_v2(db, name, numArgs, SQLITE_UTF8, reinterpret_cast<void *>(funcRef),
+    int ret = sqlite3_create_function_v2(handle->db, name, numArgs, SQLITE_UTF8, reinterpret_cast<void *>(funcRef),
             &java_invoke, nullptr, nullptr, &java_finalize);
     env->ReleaseStringUTFChars(nameStr, name);
     if (SQLITE_OK != ret) {
-        throw_sqlite_exception(env, ret, sqlite3_errmsg(db));
+        throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
     }
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCloseV2(JNIEnv *env, jclass type, jlong dbPtr) {
-    sqlite3 *db = reinterpret_cast<sqlite3 *>(dbPtr);
-    sqlite3_close_v2(db);
+    SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
+    sqlite3_close_v2(handle->db);
+    if (handle->logger) {
+        env->DeleteGlobalRef(handle->logger);
+        handle->logger = nullptr;
+    }
+    delete handle;
 }
 //endregion
 

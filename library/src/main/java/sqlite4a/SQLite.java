@@ -40,6 +40,8 @@ public class SQLite {
     @NonNull
     public static native String getVersion();
 
+    public static native long getVersionNumber();
+
     @NonNull
     public static SQLiteDb open(@NonNull String path) {
         return open(path, OPEN_READWRITE | OPEN_CREATE);

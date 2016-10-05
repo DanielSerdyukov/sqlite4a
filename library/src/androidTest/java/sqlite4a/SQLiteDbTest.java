@@ -33,7 +33,6 @@ public class SQLiteDbTest {
 
     @Test
     public void exec() throws Exception {
-        mDb.enableTracing();
         mDb.exec("SELECT sqlite_version();");
     }
 

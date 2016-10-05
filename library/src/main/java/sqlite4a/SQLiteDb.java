@@ -2,6 +2,7 @@ package sqlite4a;
 
 import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import java.io.Closeable;
 import java.util.Comparator;
@@ -10,6 +11,8 @@ import java.util.Comparator;
  * @author Daniel Serdyukov
  */
 public class SQLiteDb implements Closeable {
+
+    private static final int SQLITE_TRACE_STMT = 0x01;
 
     private final long mDbPtr;
 
@@ -22,7 +25,7 @@ public class SQLiteDb implements Closeable {
 
     private static native boolean nativeIsReadOnly(long dbPtr);
 
-    private static native void nativeTrace(long dbPtr);
+    private static native void nativeTraceV2(long dbPtr, SQLiteLog hook, int mask);
 
     private static native void nativeExec(long dbPtr, String sql);
 
@@ -40,8 +43,22 @@ public class SQLiteDb implements Closeable {
         return nativeIsReadOnly(mDbPtr);
     }
 
+    /**
+     * @see #setLogger(SQLiteLog)
+     * @deprecated will be removed in R3
+     */
+    @Deprecated
     public void enableTracing() {
-        nativeTrace(mDbPtr);
+        setLogger(new SQLiteLog() {
+            @Override
+            public void log(String sql) {
+                Log.i(SQLiteLog.class.getName(), sql);
+            }
+        });
+    }
+
+    public void setLogger(SQLiteLog logger) {
+        nativeTraceV2(mDbPtr, logger, SQLITE_TRACE_STMT);
     }
 
     public int getUserVersion() {

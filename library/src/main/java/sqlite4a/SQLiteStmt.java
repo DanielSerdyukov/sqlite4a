@@ -20,6 +20,8 @@ public class SQLiteStmt implements Closeable {
 
     private static native String nativeGetSql(long stmtPtr);
 
+    private static native String nativeGetExpandedSql(long stmtPtr);
+
     private static native void nativeBindNull(long stmtPtr, int index);
 
     private static native void nativeBindLong(long stmtPtr, int index, long value);
@@ -41,6 +43,11 @@ public class SQLiteStmt implements Closeable {
     @NonNull
     public String getSql() {
         return nativeGetSql(mStmtPtr);
+    }
+
+    @NonNull
+    public String getExpandedSql() {
+        return nativeGetExpandedSql(mStmtPtr);
     }
 
     public void bindNull(int index) {

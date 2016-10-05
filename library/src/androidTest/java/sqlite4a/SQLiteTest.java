@@ -25,6 +25,11 @@ public class SQLiteTest {
         Assert.assertThat(SQLite.getVersion(), Is.is("3.14.2"));
     }
 
+    @Test
+    public void getVersionNumber() throws Exception {
+        Assert.assertThat(SQLite.getVersionNumber(), Is.is(3014002L));
+    }
+
     @Test(expected = SQLiteException.class)
     public void openWithException() throws Exception {
         SQLite.open("/fake/path/main.db");
