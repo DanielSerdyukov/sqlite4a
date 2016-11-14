@@ -292,12 +292,12 @@ Java_sqlite4a_SQLiteDb_nativePrepareV2(JNIEnv *env, jclass type, jlong dbPtr, js
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCreateCollationV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
-        jobject comparator) {
+                                               jobject comparator) {
     SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
     jobject comparatorRef = env->NewGlobalRef(comparator);
     const char *name = env->GetStringUTFChars(nameStr, nullptr);
     int ret = sqlite3_create_collation_v2(handle->db, name, SQLITE_UTF8, reinterpret_cast<void *>(comparatorRef),
-            &java_compare, &java_finalize);
+                                          &java_compare, &java_finalize);
     env->ReleaseStringUTFChars(nameStr, name);
     if (SQLITE_OK != ret) {
         throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
@@ -306,12 +306,12 @@ Java_sqlite4a_SQLiteDb_nativeCreateCollationV2(JNIEnv *env, jclass caller, jlong
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteDb_nativeCreateFunctionV2(JNIEnv *env, jclass caller, jlong dbPtr, jstring nameStr,
-        jint numArgs, jobject func) {
+                                              jint numArgs, jobject func) {
     SQLiteDb *handle = reinterpret_cast<SQLiteDb *>(dbPtr);
     jobject funcRef = env->NewGlobalRef(func);
     const char *name = env->GetStringUTFChars(nameStr, nullptr);
     int ret = sqlite3_create_function_v2(handle->db, name, numArgs, SQLITE_UTF8, reinterpret_cast<void *>(funcRef),
-            &java_invoke, nullptr, nullptr, &java_finalize);
+                                         &java_invoke, nullptr, nullptr, &java_finalize);
     env->ReleaseStringUTFChars(nameStr, name);
     if (SQLITE_OK != ret) {
         throw_sqlite_exception(env, ret, sqlite3_errmsg(handle->db));
@@ -334,6 +334,15 @@ Java_sqlite4a_SQLiteDb_nativeCloseV2(JNIEnv *env, jclass type, jlong dbPtr) {
 extern "C" JNIEXPORT jstring JNICALL
 Java_sqlite4a_SQLiteStmt_nativeGetSql(JNIEnv *env, jclass type, jlong stmtPtr) {
     return env->NewStringUTF(sqlite3_sql(reinterpret_cast<sqlite3_stmt *>(stmtPtr)));
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_sqlite4a_SQLiteStmt_nativeGetExpandedSql(JNIEnv *env, jclass type, jlong stmtPtr) {
+    sqlite3_stmt *stmt = reinterpret_cast<sqlite3_stmt *>(stmtPtr);
+    char *expandedSql = sqlite3_expanded_sql(stmt);
+    jstring sqlStr = env->NewStringUTF(expandedSql);
+    sqlite3_free(expandedSql);
+    return sqlStr;
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -365,7 +374,7 @@ Java_sqlite4a_SQLiteStmt_nativeBindDouble(JNIEnv *env, jclass caller, jlong stmt
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteStmt_nativeBindString(JNIEnv *env, jclass caller, jlong stmtPtr, jint index,
-        jstring valueStr) {
+                                          jstring valueStr) {
     sqlite3_stmt *stmt = reinterpret_cast<sqlite3_stmt *>(stmtPtr);
     const char *value = env->GetStringUTFChars(valueStr, nullptr);
     int ret = sqlite3_bind_text(stmt, index, value, static_cast<int>(strlen(value)), SQLITE_TRANSIENT);
@@ -378,7 +387,7 @@ Java_sqlite4a_SQLiteStmt_nativeBindString(JNIEnv *env, jclass caller, jlong stmt
 
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteStmt_nativeBindBlob(JNIEnv *env, jclass caller, jlong stmtPtr, jint index,
-        jbyteArray valueArr) {
+                                        jbyteArray valueArr) {
     sqlite3_stmt *stmt = reinterpret_cast<sqlite3_stmt *>(stmtPtr);
     jbyte *value = env->GetByteArrayElements(valueArr, nullptr);
     int ret = sqlite3_bind_blob(stmt, index, value, env->GetArrayLength(valueArr), SQLITE_TRANSIENT);

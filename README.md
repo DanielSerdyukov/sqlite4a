@@ -6,7 +6,7 @@ Simple jni wrapper for SQLite.
 
 ### Gradle
 ```groovy
-compile 'sqlite4a:library:3.14.2-r1'
+compile 'sqlite4a:library:3.15.1-r2'
 ```
 
 ### Some examples
@@ -90,7 +90,7 @@ db.createFunction("distanceBetween", 4, new SQLiteFunc() { // name, numArgs, fun
 final SQLiteStmt stmt = mDb.prepare("SELECT distanceBetween(lat, lng, ?, ?) FROM test;");
 stmt.bindDouble(1, lat);
 stmt.bindDouble(2, lng);
-final SQLiteCursor cursor = stmt.executeQuery();
+final SQLiteCursor cursor = stmt.executeSelect();
 while(cursor.step()) {
     Log.d(TAG, "distance = " + cursor.getColumnDouble(0);)
 }

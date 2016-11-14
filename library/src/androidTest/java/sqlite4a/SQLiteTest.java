@@ -22,12 +22,12 @@ public class SQLiteTest {
 
     @Test
     public void getVersion() throws Exception {
-        Assert.assertThat(SQLite.getVersion(), Is.is("3.14.2"));
+        Assert.assertThat(SQLite.getVersion(), Is.is("3.15.1"));
     }
 
     @Test
     public void getVersionNumber() throws Exception {
-        Assert.assertThat(SQLite.getVersionNumber(), Is.is(3014002L));
+        Assert.assertThat(SQLite.getVersionNumber(), Is.is(3015001L));
     }
 
     @Test(expected = SQLiteException.class)
