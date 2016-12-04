@@ -6,7 +6,7 @@ Simple jni wrapper for SQLite.
 
 ### Gradle
 ```groovy
-compile 'sqlite4a:library:3.15.1-r2'
+compile 'sqlite4a:library:3.15.2-r3'
 ```
 
 ### Some examples
@@ -22,7 +22,12 @@ SQLiteDb db = SQLite.open("/absolute/path", SQLite.OPEN_READWRITE | SQLite.OPEN_
 
 #### Simple query
 ```java
-db.exec("PRAGMA case_sensitive_like = true;");
+db.exec("PRAGMA case_sensitive_like = true;", null);
+
+db.exec("SELECT sqlite_version() AS version;", (columns, values) -> {
+    Log.i("SQLITE", Arrays.toString(columns));  // ["version"]
+    Log.i("SQLITE", Arrays.toString(values));   // ["3.15.2"]
+});
 ```
 
 #### Prepared query
@@ -43,7 +48,7 @@ stmt.close();
 
 #### Query tracing
 ```java
-db.enableTracing(); // enable tracing
+db.trace(sql -> { Log.i("SQLITE", sql); });
 db.exec("CREATE TABLE IF NOT EXISTS foo(a INTEGER PRIMARY KEY, b REAL, c TEXT, d BLOB, e TEXT);");
 SQLite stmt = db.prepare("INSERT INTO foo(a, b, c, d, e) VALUES(?, ?, ?, ?, ?);");
 // ... bind args
@@ -52,14 +57,14 @@ stmt.close();
 ```
 LogCat:
 ```
-D/sqlite3_jni: CREATE TABLE IF NOT EXISTS foo(a INTEGER PRIMARY KEY, b REAL, c TEXT, d BLOB, e TEXT);
-D/sqlite3_jni: INSERT INTO foo(a, b, c, d, e) VALUES(1000, 1.23, 'test1', x'010203', NULL);
+D/SQLITE: CREATE TABLE IF NOT EXISTS foo(a INTEGER PRIMARY KEY, b REAL, c TEXT, d BLOB, e TEXT);
+D/SQLITE: INSERT INTO foo(a, b, c, d, e) VALUES(1000, 1.23, 'test1', x'010203', NULL);
 ```
 
 #### Custom collation
 ```java
-mDb.exec("CREATE TABLE test(name TEXT);");
-mDb.exec("INSERT INTO test VALUES('John Doe');");
+mDb.exec("CREATE TABLE test(name TEXT);", null);
+mDb.exec("INSERT INTO test VALUES('John Doe');", null);
 mDb.createCollation("NOCASE", new Comparator<String>() {
     @Override
     public int compare(String lhs, String rhs) {
@@ -76,8 +81,8 @@ stmt.close();
 
 #### Custom functions
 ```java
-db.exec("CREATE TABLE test(name TEXT, age INTEGER, lat REAL, lng REAL, bytes BLOB);");
-db.exec("INSERT INTO test VALUES('John', 25, 59.9388333, 30.315866, x'0103020405');");
+db.exec("CREATE TABLE test(name TEXT, age INTEGER, lat REAL, lng REAL, bytes BLOB);", null);
+db.exec("INSERT INTO test VALUES('John', 25, 59.9388333, 30.315866, x'0103020405');", null);
 db.createFunction("distanceBetween", 4, new SQLiteFunc() { // name, numArgs, func
    @Override
    public void call(@NonNull SQLiteContext context, @NonNull SQLiteValue[] values) {
