@@ -3,10 +3,13 @@ package sqlite4a;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -18,11 +21,15 @@ public class SQLiteStmtTest {
 
     private SQLiteDb mDb;
 
+    @BeforeClass
+    public static void loadLibrary() {
+        ReLinker.loadLibrary(InstrumentationRegistry.getContext(), SQLite.JNI_LIB);
+    }
+
     @Before
     public void setUp() throws Exception {
-        SQLite.loadLibrary(InstrumentationRegistry.getContext());
-        mDb = SQLite.open(":memory:");
-        mDb.exec("CREATE TABLE test(id INTEGER PRIMARY KEY);");
+        mDb = SQLite.open(":memory:", SQLite.OPEN_CREATE | SQLite.OPEN_READWRITE);
+        mDb.exec("CREATE TABLE test(id INTEGER PRIMARY KEY);", null);
     }
 
     @Test

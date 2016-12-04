@@ -10,8 +10,6 @@ android {
         versionCode 1
         versionName pVersionName
 
-        consumerProguardFiles 'proguard.pro'
-
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
@@ -31,7 +29,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.pro'
         }
     }
 
@@ -48,7 +47,7 @@ android {
 
 dependencies {
     compile 'com.android.support:support-annotations:25.0.1'
-    compile 'com.getkeepsafe.relinker:relinker:1.2.1'
+    androidTestCompile 'com.getkeepsafe.relinker:relinker:1.2.1'
     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.2'
     androidTestCompile 'com.android.support.test:runner:0.5'
 }

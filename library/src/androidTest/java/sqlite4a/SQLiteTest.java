@@ -3,9 +3,11 @@ package sqlite4a;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 import org.hamcrest.core.Is;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -15,35 +17,19 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class SQLiteTest {
 
-    @Before
-    public void setUp() throws Exception {
-        SQLite.loadLibrary(InstrumentationRegistry.getContext());
+    @BeforeClass
+    public static void loadLibrary() {
+        ReLinker.loadLibrary(InstrumentationRegistry.getContext(), SQLite.JNI_LIB);
     }
 
     @Test
-    public void getVersion() throws Exception {
-        Assert.assertThat(SQLite.getVersion(), Is.is("3.15.1"));
-    }
-
-    @Test
-    public void getVersionNumber() throws Exception {
-        Assert.assertThat(SQLite.getVersionNumber(), Is.is(3015001L));
+    public void getLibVersionNumber() throws Exception {
+        Assert.assertThat(SQLite.getLibVersionNumber(), Is.is(3015001L));
     }
 
     @Test(expected = SQLiteException.class)
-    public void openWithException() throws Exception {
-        SQLite.open("/fake/path/main.db");
-    }
-
-    @Test
-    public void isReadOnly() throws Exception {
-        SQLiteDb db = SQLite.open(":memory:", SQLite.OPEN_READONLY);
-        Assert.assertThat(db.isReadOnly(), Is.is(true));
-        db.close();
-
-        db = SQLite.open(":memory:");
-        Assert.assertThat(db.isReadOnly(), Is.is(false));
-        db.close();
+    public void openError() throws Exception {
+        SQLite.open("/fake/path/main.db", SQLite.OPEN_CREATE | SQLite.OPEN_READWRITE);
     }
 
 }

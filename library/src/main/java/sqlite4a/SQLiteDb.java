@@ -1,8 +1,7 @@
 package sqlite4a;
 
-import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.support.annotation.Nullable;
 
 import java.io.Closeable;
 import java.util.Comparator;
@@ -12,99 +11,67 @@ import java.util.Comparator;
  */
 public class SQLiteDb implements Closeable {
 
-    private static final int SQLITE_TRACE_STMT = 0x01;
+    private final long mPtr;
 
-    private final long mDbPtr;
-
-    @Keep
-    protected SQLiteDb(long dbPtr) {
-        mDbPtr = dbPtr;
+    SQLiteDb(long ptr) {
+        mPtr = ptr;
     }
 
-    private static native void nativeCloseV2(long dbPtr);
+    private static native void nativeClose(long ptr);
 
-    private static native boolean nativeIsReadOnly(long dbPtr);
+    private static native int nativeIsReadOnly(long ptr);
 
-    private static native void nativeTraceV2(long dbPtr, SQLiteLog hook, int mask);
+    private static native void nativeTrace(long ptr, SQLiteTrace func);
 
-    private static native void nativeExec(long dbPtr, String sql);
+    private static native void nativeExec(long ptr, String sql, SQLiteExec func);
 
-    private static native double nativeExecForDouble(long dbPtr, String sql);
+    private static native double nativeExecForDouble(long ptr, String sql);
 
-    private static native int nativeGetAutocommit(long dbPtr);
+    private static native int nativeGetAutocommit(long ptr);
 
-    private static native long nativePrepareV2(long dbPtr, String sql);
+    private static native long nativePrepare(long ptr, String sql);
 
-    private static native void nativeCreateCollationV2(long dbPtr, String name, Comparator<String> comparator);
+    private static native void nativeCreateCollation(long ptr, String name, Comparator<String> comparator);
 
-    private static native void nativeCreateFunctionV2(long dbPtr, String name, int numArgs, SQLiteInvokable func);
+    private static native void nativeCreateFunction(long ptr, String name, int numArgs, JniFunc func);
 
     public boolean isReadOnly() {
-        return nativeIsReadOnly(mDbPtr);
+        return nativeIsReadOnly(mPtr) != 0;
     }
 
-    /**
-     * @see #setLogger(SQLiteLog)
-     * @deprecated will be removed in R3
-     */
-    @Deprecated
-    public void enableTracing() {
-        setLogger(new SQLiteLog() {
-            @Override
-            public void log(String sql) {
-                Log.i(SQLiteLog.class.getName(), sql);
-            }
-        });
+    public boolean getAutoCommit() {
+        return nativeGetAutocommit(mPtr) <= 0;
     }
 
-    public void setLogger(SQLiteLog logger) {
-        nativeTraceV2(mDbPtr, logger, SQLITE_TRACE_STMT);
+    public void trace(@Nullable SQLiteTrace func) {
+        nativeTrace(mPtr, func);
     }
 
-    public int getUserVersion() {
-        return (int) nativeExecForDouble(mDbPtr, "PRAGMA user_version;");
+    public void exec(@NonNull String sql, @Nullable SQLiteExec func) {
+        nativeExec(mPtr, sql, func);
     }
 
-    public void setUserVersion(int version) {
-        nativeExec(mDbPtr, "PRAGMA user_version = " + version + ";");
-    }
-
-    public void begin() {
-        nativeExec(mDbPtr, "BEGIN;");
-    }
-
-    public void commit() {
-        nativeExec(mDbPtr, "COMMIT;");
-    }
-
-    public void rollback() {
-        nativeExec(mDbPtr, "ROLLBACK;");
-    }
-
-    public boolean inTransaction() {
-        return nativeGetAutocommit(mDbPtr) <= 0;
-    }
-
-    public void exec(@NonNull String sql) {
-        nativeExec(mDbPtr, sql);
+    @NonNull
+    public Number execForNumber(@NonNull String sql) {
+        return nativeExecForDouble(mPtr, sql);
     }
 
     @NonNull
     public SQLiteStmt prepare(@NonNull String sql) {
-        return new SQLiteStmt(nativePrepareV2(mDbPtr, sql));
+        return new SQLiteStmt(nativePrepare(mPtr, sql));
     }
 
     public void createCollation(@NonNull String name, @NonNull Comparator<String> comparator) {
-        nativeCreateCollationV2(mDbPtr, name, comparator);
+        nativeCreateCollation(mPtr, name, comparator);
     }
 
     public void createFunction(@NonNull String name, int numArgs, @NonNull SQLiteFunc func) {
-        nativeCreateFunctionV2(mDbPtr, name, numArgs, new SQLiteInvokable(func));
+        nativeCreateFunction(mPtr, name, numArgs, new JniFunc(func));
     }
 
     @Override
     public void close() {
-        nativeCloseV2(mDbPtr);
+        nativeClose(mPtr);
     }
 
 }

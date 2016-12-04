@@ -4,10 +4,13 @@ import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -19,17 +22,21 @@ public class SQLiteFunctionTest {
 
     private SQLiteDb mDb;
 
+    @BeforeClass
+    public static void loadLibrary() {
+        ReLinker.loadLibrary(InstrumentationRegistry.getContext(), SQLite.JNI_LIB);
+    }
+
     @Before
     public void setUp() throws Exception {
-        SQLite.loadLibrary(InstrumentationRegistry.getContext());
-        mDb = SQLite.open(":memory:");
-        mDb.exec("CREATE TABLE cities(name TEXT, since INTEGER, lat REAL, lng REAL, bytes BLOB);");
-        mDb.exec("INSERT INTO cities VALUES('Санкт-Петербург', 1703, 59.9388333, 30.315866, x'0103020405');");
+        mDb = SQLite.open(":memory:", SQLite.OPEN_CREATE | SQLite.OPEN_READWRITE);
+        mDb.exec("CREATE TABLE cities(name TEXT, since INTEGER, lat REAL, lng REAL, bytes BLOB);", null);
+        mDb.exec("INSERT INTO cities VALUES('Санкт-Петербург', 1703, 59.9388333, 30.315866, x'0103020405');", null);
     }
 
     @Test
     public void overrideUpper() throws Exception {
-        mDb.exec("INSERT INTO cities(rowid, name) VALUES(100, 'санкт');");
+        mDb.exec("INSERT INTO cities(rowid, name) VALUES(100, 'санкт');", null);
         mDb.createFunction("upper", 1, new SQLiteFunc() {
             @Override
             public void call(@NonNull SQLiteContext context, @NonNull SQLiteValue[] values) {

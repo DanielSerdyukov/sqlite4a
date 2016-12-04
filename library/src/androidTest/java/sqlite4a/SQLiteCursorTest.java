@@ -3,10 +3,13 @@ package sqlite4a;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -27,14 +30,18 @@ public class SQLiteCursorTest {
 
     private SQLiteDb mDb;
 
+    @BeforeClass
+    public static void loadLibrary() {
+        ReLinker.loadLibrary(InstrumentationRegistry.getContext(), SQLite.JNI_LIB);
+    }
+
     @Before
     public void setUp() throws Exception {
         final Random random = new SecureRandom();
-        SQLite.loadLibrary(InstrumentationRegistry.getContext());
-        mDb = SQLite.open(":memory:");
-        mDb.exec("CREATE TABLE test(id INTEGER PRIMARY KEY, a INTEGER, b REAL, c TEXT, d BLOB);");
+        mDb = SQLite.open(":memory:", SQLite.OPEN_CREATE | SQLite.OPEN_READWRITE);
+        mDb.exec("CREATE TABLE test(id INTEGER PRIMARY KEY, a INTEGER, b REAL, c TEXT, d BLOB);", null);
         final SQLiteStmt stmt = mDb.prepare("INSERT INTO test VALUES(?, ?, ?, ?, ?);");
-        mDb.begin();
+        mDb.exec("BEGIN;", null);
         for (int i = 0; i < 10; ++i) {
             final Entry entry = Entry.create(random);
             stmt.bindNull(1);
@@ -46,7 +53,7 @@ public class SQLiteCursorTest {
             mEntries.add(entry);
             stmt.clearBindings();
         }
-        mDb.commit();
+        mDb.exec("COMMIT;", null);
         stmt.close();
     }
 

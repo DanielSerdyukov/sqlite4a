@@ -3,10 +3,13 @@ package sqlite4a;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.getkeepsafe.relinker.ReLinker;
+
 import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -20,10 +23,14 @@ public class SQLiteCollationTest {
 
     private SQLiteDb mDb;
 
+    @BeforeClass
+    public static void loadLibrary() {
+        ReLinker.loadLibrary(InstrumentationRegistry.getContext(), SQLite.JNI_LIB);
+    }
+
     @Before
     public void setUp() throws Exception {
-        SQLite.loadLibrary(InstrumentationRegistry.getContext());
-        mDb = SQLite.open(":memory:");
+        mDb = SQLite.open(":memory:", SQLite.OPEN_CREATE | SQLite.OPEN_READWRITE);
     }
 
     @Test
@@ -34,9 +41,9 @@ public class SQLiteCollationTest {
                 return lhs.compareToIgnoreCase(rhs);
             }
         });
-        mDb.exec("CREATE TABLE test(foo TEXT COLLATE UTF8_NOCASE);");
-        mDb.exec("INSERT INTO test VALUES('TEST');");
-        mDb.exec("INSERT INTO test VALUES('ТЕСТ');");
+        mDb.exec("CREATE TABLE test(foo TEXT COLLATE UTF8_NOCASE);", null);
+        mDb.exec("INSERT INTO test VALUES('TEST');", null);
+        mDb.exec("INSERT INTO test VALUES('ТЕСТ');", null);
 
         final SQLiteStmt stmt = mDb.prepare("SELECT * FROM test WHERE foo = ?;");
         stmt.bindString(1, "тест");
@@ -54,9 +61,9 @@ public class SQLiteCollationTest {
                 return lhs.compareToIgnoreCase(rhs);
             }
         });
-        mDb.exec("CREATE TABLE test(foo TEXT);");
-        mDb.exec("INSERT INTO test VALUES('TEST');");
-        mDb.exec("INSERT INTO test VALUES('ТЕСТ');");
+        mDb.exec("CREATE TABLE test(foo TEXT);", null);
+        mDb.exec("INSERT INTO test VALUES('TEST');", null);
+        mDb.exec("INSERT INTO test VALUES('ТЕСТ');", null);
 
         final SQLiteStmt stmt = mDb.prepare("SELECT * FROM test WHERE foo = ? COLLATE UTF8_NOCASE;");
         stmt.bindString(1, "тест");

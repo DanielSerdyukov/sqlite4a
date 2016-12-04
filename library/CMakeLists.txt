@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.4.1)
 
+set(PROJECT_NAME sqlite3_jni)
+
 set(SOURCES
+    src/main/cpp/sqlite3.h
     src/main/cpp/sqlite3.c
     src/main/cpp/sqlite3_jni.cc)
-
-set(HEADERS src/main/cpp/sqlite3.h)
 
 add_definitions(
         -D__ANDROID__
@@ -24,9 +25,9 @@ add_definitions(
         -DSQLITE_DEFAULT_FOREIGN_KEYS=1
 )
 
-add_library(sqlite3_jni SHARED ${HEADERS} ${SOURCES})
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
-find_library(M m)
-find_library(LOG log)
+find_library(lm m)
+find_library(llog log)
 
-target_link_libraries(sqlite3_jni ${M} ${LOG})
+target_link_libraries(${PROJECT_NAME} ${lm} ${llog})

@@ -1,14 +1,13 @@
 package sqlite4a;
 
-import android.content.Context;
 import android.support.annotation.NonNull;
-
-import com.getkeepsafe.relinker.ReLinker;
 
 /**
  * @author Daniel Serdyukov
  */
 public class SQLite {
+
+    public static final String JNI_LIB = "sqlite3_jni";
 
     public static final int OPEN_READONLY = 0x00000001;
 
@@ -22,41 +21,13 @@ public class SQLite {
 
     public static final int OPEN_FULLMUTEX = 0x00010000;
 
-    private static final int BUSY_TIMEOUT_MS = 2500;
-
-    /**
-     * @see {@link #loadLibrary(Context)}
-     * @deprecated
-     */
-    @Deprecated
-    public static void loadLibrary() {
-        Runtime.getRuntime().loadLibrary("sqlite3_jni");
-    }
-
-    public static void loadLibrary(@NonNull Context context) {
-        ReLinker.loadLibrary(context, "sqlite3_jni");
-    }
-
-    @NonNull
-    public static native String getVersion();
-
-    public static native long getVersionNumber();
-
-    @NonNull
-    public static SQLiteDb open(@NonNull String path) {
-        return open(path, OPEN_READWRITE | OPEN_CREATE);
-    }
+    public static native long getLibVersionNumber();
 
     @NonNull
     public static SQLiteDb open(@NonNull String path, int flags) {
-        return open(path, flags, BUSY_TIMEOUT_MS);
+        return new SQLiteDb(nativeOpen(path, flags));
     }
 
-    @NonNull
-    public static SQLiteDb open(@NonNull String path, int flags, int busyTimeout) {
-        return new SQLiteDb(nativeOpenV2(path, flags, busyTimeout));
-    }
-
-    private static native long nativeOpenV2(String path, int flags, int busyTimeout);
+    private static native long nativeOpen(String path, int flags);
 
 }
