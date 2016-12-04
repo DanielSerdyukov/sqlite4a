@@ -1,7 +1,6 @@
 stages:
   - clean
   - build
-  - test
   - deploy
 
 cleanup:
@@ -23,6 +22,4 @@ bintrayUpload:
   stage: deploy
   script:
     - ./gradlew bintrayUpload
-  dependencies:
-    - assembleRelease
   when: manual
