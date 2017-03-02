@@ -1,0 +1,50 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11", "-fno-rtti", "-fno-exceptions", "-fvisibility=hidden"
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.pro'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+}
+
+configurations {
+    androidTestCompile.exclude group: 'org.hamcrest', module: 'hamcrest-core'
+}
+
+dependencies {
+    compile 'com.android.support:support-annotations:25.2.0'
+    androidTestCompile 'com.getkeepsafe.relinker:relinker:1.2.1'
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+        exclude group: 'org.hamcrest'
+    })
+    androidTestCompile 'junit:junit:4.12'
+    androidTestCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
+}
