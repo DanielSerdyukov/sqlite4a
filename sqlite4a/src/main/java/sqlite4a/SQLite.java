@@ -16,10 +16,48 @@
 
 package sqlite4a;
 
+import android.support.annotation.IntDef;
+import android.support.annotation.NonNull;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 public class SQLite {
 
     public static final String JNI_LIB = "sqlite3_jni";
 
+    public static final int OPEN_READONLY = 0x00000001;
+
+    public static final int OPEN_READWRITE = 0x00000002;
+
+    public static final int OPEN_CREATE = 0x00000004;
+
+    public static final int OPEN_URI = 0b1000000;
+
+    public static final int OPEN_NOMUTEX = 0x00008000;
+
+    public static final int OPEN_FULLMUTEX = 0x00010000;
+
     public static native long getLibVersion();
+
+    @NonNull
+    public static SQLiteDb open(@NonNull String path, @OpenFlags int flags) {
+        return new SQLiteDb(nativeOpen(path, flags));
+    }
+
+    private static native long nativeOpen(String path, int flags);
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            OPEN_READONLY,
+            OPEN_READWRITE,
+            OPEN_CREATE,
+            OPEN_URI,
+            OPEN_NOMUTEX,
+            OPEN_FULLMUTEX
+    }, flag = true)
+    public @interface OpenFlags {
+
+    }
 
 }
