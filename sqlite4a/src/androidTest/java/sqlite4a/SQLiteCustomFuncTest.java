@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 exzogeni.com
+ * Copyright 2016-2017 exzogeni.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package sqlite4a;
 import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.text.TextUtils;
 
 import com.getkeepsafe.relinker.ReLinker;
 
@@ -33,7 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class SQLiteFuncTest {
+public class SQLiteCustomFuncTest {
 
     private SQLiteDb mDb;
 
@@ -71,10 +70,7 @@ public class SQLiteFuncTest {
         mDb.createFunction("custom_join", 2, new SQLiteDb.Func() {
             @Override
             public void call(@NonNull SQLiteContext context, @NonNull SQLiteValue[] values) {
-                context.resultString(TextUtils.join(" ", new String[]{
-                        values[0].stringValue(),
-                        values[1].stringValue(),
-                }));
+                context.resultString(values[0].stringValue() + " " + values[1].stringValue());
             }
         });
         final SQLiteStmt stmt = mDb.prepare("UPDATE test SET baz = custom_join(?, ?);");
