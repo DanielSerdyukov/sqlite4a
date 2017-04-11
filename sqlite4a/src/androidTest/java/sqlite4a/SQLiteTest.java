@@ -37,7 +37,7 @@ public class SQLiteTest {
 
     @Test
     public void sqlite_libversion() throws Exception {
-        Assert.assertThat(SQLite.getLibVersion(), Is.is(3017000L));
+        Assert.assertThat(SQLite.getLibVersion(), Is.is(3018000L));
     }
 
 }

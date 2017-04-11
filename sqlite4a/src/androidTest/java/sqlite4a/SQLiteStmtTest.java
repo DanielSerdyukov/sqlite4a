@@ -21,6 +21,7 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.getkeepsafe.relinker.ReLinker;
 
+import org.hamcrest.Matchers;
 import org.hamcrest.core.Is;
 import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsNot;
@@ -54,17 +55,21 @@ public class SQLiteStmtTest {
     @Before
     public void setUp() throws Exception {
         mDb = SQLite.open(":memory:", SQLite.OPEN_READWRITE | SQLite.OPEN_CREATE);
-        mDb.exec("CREATE TABLE test(int INTEGER, text TEXT, real REAL, blob BLOB);");
+        mDb.exec("CREATE TABLE test(_id INTEGER PRIMARY KEY, " +
+                "int INTEGER, " +
+                "text TEXT, " +
+                "real REAL, " +
+                "blob BLOB);");
         mEntries = new ArrayList<>();
         final Random random = new SecureRandom();
-        final SQLiteStmt stmt = mDb.prepare("INSERT INTO test VALUES(?, ?, ?, ?);");
+        final SQLiteStmt stmt = mDb.prepare("INSERT INTO test(_id, int, text, real, blob) VALUES(?, ?, ?, ?, ?);");
         final long[] ids = new long[10];
         for (int i = 0; i < ids.length; ++i) {
             final Entry entry = Entry.generate(random);
-            stmt.bindLong(1, entry.mInt);
-            stmt.bindString(2, entry.mText);
-            stmt.bindDouble(3, entry.mReal);
-            stmt.bindBlob(4, entry.mBlob);
+            stmt.bindLong(2, entry.mInt);
+            stmt.bindString(3, entry.mText);
+            stmt.bindDouble(4, entry.mReal);
+            stmt.bindBlob(5, entry.mBlob);
             ids[i] = stmt.insert();
             stmt.clearBindings();
             mEntries.add(entry);
@@ -80,7 +85,9 @@ public class SQLiteStmtTest {
         final SQLiteIterator actual = mDb.prepare("SELECT * FROM test;").select();
         final Iterator<Entry> expected = mEntries.iterator();
         while (actual.hasNext() && expected.hasNext()) {
-            Assert.assertThat(Entry.map(actual.next()), IsEqual.equalTo(expected.next()));
+            final Entry entry = Entry.map(actual.next());
+            Assert.assertThat(entry, IsEqual.equalTo(expected.next()));
+            Assert.assertThat(entry.mId, Matchers.greaterThan(0L));
         }
         Assert.assertThat(actual.hasNext(), Is.is(false));
         Assert.assertThat(expected.hasNext(), Is.is(false));
@@ -108,6 +115,8 @@ public class SQLiteStmtTest {
 
     private static class Entry {
 
+        long mId;
+
         int mInt;
 
         String mText;
@@ -128,10 +137,11 @@ public class SQLiteStmtTest {
 
         static Entry map(SQLiteRow row) {
             final Entry entry = new Entry();
-            entry.mInt = (int) row.getColumnLong(0);
-            entry.mText = row.getColumnString(1);
-            entry.mReal = row.getColumnDouble(2);
-            entry.mBlob = row.getColumnBlob(3);
+            entry.mId = row.getColumnLong(0);
+            entry.mInt = (int) row.getColumnLong(1);
+            entry.mText = row.getColumnString(2);
+            entry.mReal = row.getColumnDouble(3);
+            entry.mBlob = row.getColumnBlob(4);
             return entry;
         }
 
