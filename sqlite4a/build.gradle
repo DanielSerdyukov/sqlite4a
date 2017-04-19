@@ -1,3 +1,5 @@
+import com.jfrog.bintray.gradle.BintrayUploadTask
+
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
@@ -110,11 +112,11 @@ publishing {
 
 
 bintray {
-    user = project.properties['bintrayUser']
-    key = project.properties['bintrayKey']
+    user = properties.get('bintray.user')
+    key = properties.get('bintray.apikey')
     publications = ['maven']
     pkg {
-        repo = 'maven'
+        repo = 'sqlite4a'
         name = 'sqlite4a'
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/DanielSerdyukov/sqlite4a.git'
@@ -125,5 +127,5 @@ bintray {
     }
 }
 
-publishToMavenLocal.dependsOn 'assembleRelease'
-bintrayUpload.dependsOn 'publishToMavenLocal'
+project.tasks.withType(PublishToMavenLocal).all { it.dependsOn 'assembleRelease' }
+project.tasks.withType(BintrayUploadTask).all { it.dependsOn 'publishToMavenLocal' }
