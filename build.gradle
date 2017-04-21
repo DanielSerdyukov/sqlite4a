@@ -1,3 +1,5 @@
+import com.jfrog.bintray.gradle.BintrayUploadTask
+
 buildscript {
     repositories {
         jcenter()
@@ -16,6 +18,50 @@ allprojects {
     version '3.18.0'
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+configure([project(':sqlite4a')]) {
+    apply plugin: 'com.jfrog.bintray'
+
+    bintray {
+        user = rootProject.properties.get('bintray.user')
+        key = rootProject.properties.get('bintray.apikey')
+        publications = ['maven']
+        override = true
+        pkg {
+            repo = 'sqlite4a'
+            name = 'sqlite4a'
+            licenses = ['Apache-2.0']
+            vcsUrl = 'https://github.com/DanielSerdyukov/sqlite4a.git'
+            version {
+                name = rootProject.version
+                released = new Date()
+            }
+        }
+    }
+
+    ext {
+        pomXml = {
+            name project.name
+            resolveStrategy = DELEGATE_FIRST
+            url 'https://github.com/DanielSerdyukov/sqlite4a'
+            scm {
+                url 'https://github.com/DanielSerdyukov/sqlite4a.git'
+                connection 'scm:git:git://github.com/DanielSerdyukov/sqlite4a.git'
+                developerConnection 'scm:git:git@github.com/DanielSerdyukov/sqlite4a.git'
+            }
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/license/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+            developers {
+                developer {
+                    name 'Daniel Serdyukov'
+                }
+            }
+        }
+    }
+
+    project.tasks.withType(BintrayUploadTask).all { it.dependsOn 'publishToMavenLocal' }
 }

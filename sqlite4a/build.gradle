@@ -1,8 +1,4 @@
-import com.jfrog.bintray.gradle.BintrayUploadTask
-
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
 
 android {
     compileSdkVersion 25
@@ -21,6 +17,13 @@ android {
                 cppFlags "-std=c++11", "-fno-rtti", "-fno-exceptions", "-fvisibility=hidden"
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86"
             }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.pro'
         }
     }
 
@@ -56,31 +59,7 @@ dependencies {
     androidTestCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
 }
 
-ext {
-    pomXml = {
-        resolveStrategy = DELEGATE_FIRST
-        name project.name
-        description project.description
-        url 'https://github.com/DanielSerdyukov/sqlite4a'
-        scm {
-            url 'https://github.com/DanielSerdyukov/sqlite4a.git'
-            connection 'scm:git:git://github.com/DanielSerdyukov/sqlite4a.git'
-            developerConnection 'scm:git:git@github.com/DanielSerdyukov/sqlite4a.git'
-        }
-        licenses {
-            license {
-                name 'The Apache Software License, Version 2.0'
-                url 'http://www.apache.org/license/LICENSE-2.0.txt'
-                distribution 'repo'
-            }
-        }
-        developers {
-            developer {
-                name 'Daniel Serdyukov'
-            }
-        }
-    }
-}
+apply plugin: 'maven-publish'
 
 task sourcesJar(type: Jar) {
     classifier = 'sources'
@@ -110,22 +89,4 @@ publishing {
     }
 }
 
-
-bintray {
-    user = properties.get('bintray.user')
-    key = properties.get('bintray.apikey')
-    publications = ['maven']
-    pkg {
-        repo = 'sqlite4a'
-        name = 'sqlite4a'
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/DanielSerdyukov/sqlite4a.git'
-        version {
-            name = project.version
-            released = new Date()
-        }
-    }
-}
-
 project.tasks.withType(PublishToMavenLocal).all { it.dependsOn 'assembleRelease' }
-project.tasks.withType(BintrayUploadTask).all { it.dependsOn 'publishToMavenLocal' }

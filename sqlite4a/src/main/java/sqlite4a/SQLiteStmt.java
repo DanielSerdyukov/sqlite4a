@@ -31,8 +31,6 @@ public class SQLiteStmt implements Closeable {
 
     static native void nativeFinalize(long ptr);
 
-    private static native String nativeGetSql(long ptr);
-
     private static native void nativeBindNull(long ptr, int index);
 
     private static native void nativeBindLong(long ptr, int index, long value);

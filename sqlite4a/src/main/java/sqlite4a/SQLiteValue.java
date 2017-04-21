@@ -16,9 +16,6 @@
 
 package sqlite4a;
 
-/**
- * @author Daniel Serdyukov
- */
 public class SQLiteValue {
 
     private final long mValuePtr;

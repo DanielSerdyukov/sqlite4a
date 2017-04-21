@@ -273,11 +273,6 @@ Java_sqlite4a_SQLiteDb_nativeCreateFunction(JNIEnv *env, jclass type, jlong jptr
     }
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_sqlite4a_SQLiteStmt_nativeGetSql(JNIEnv *env, jclass type, jlong jptr) {
-    return env->NewStringUTF(sqlite3_sql(reinterpret_cast<sqlite3_stmt *>(jptr)));
-}
-
 extern "C" JNIEXPORT void JNICALL
 Java_sqlite4a_SQLiteStmt_nativeBindNull(JNIEnv *env, jclass type, jlong jptr, jint index) {
     sqlite3_stmt *stmt = reinterpret_cast<sqlite3_stmt *>(jptr);
